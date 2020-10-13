@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Bence\\Desktop\\ParallelCalculationExamProject\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj": {}
+    "C:\\Users\\Bence\\Documents\\School\\PBSW_ParallelProgramming\\CompulsoryAssignments\\ParallelCalculatorCSharp\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Bence\\Desktop\\ParallelCalculationExamProject\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj": {
+    "C:\\Users\\Bence\\Documents\\School\\PBSW_ParallelProgramming\\CompulsoryAssignments\\ParallelCalculatorCSharp\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Bence\\Desktop\\ParallelCalculationExamProject\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj",
+        "projectUniqueName": "C:\\Users\\Bence\\Documents\\School\\PBSW_ParallelProgramming\\CompulsoryAssignments\\ParallelCalculatorCSharp\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj",
         "projectName": "ParallelCalculationExamProject",
-        "projectPath": "C:\\Users\\Bence\\Desktop\\ParallelCalculationExamProject\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj",
+        "projectPath": "C:\\Users\\Bence\\Documents\\School\\PBSW_ParallelProgramming\\CompulsoryAssignments\\ParallelCalculatorCSharp\\ParallelCalculationExamProject\\ParallelCalculationExamProject.csproj",
         "packagesPath": "C:\\Users\\Bence\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Bence\\Desktop\\ParallelCalculationExamProject\\ParallelCalculationExamProject\\obj\\",
+        "outputPath": "C:\\Users\\Bence\\Documents\\School\\PBSW_ParallelProgramming\\CompulsoryAssignments\\ParallelCalculatorCSharp\\ParallelCalculationExamProject\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Bence\\AppData\\Roaming\\NuGet\\NuGet.Config",
