@@ -1,53 +1,129 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
 
-namespace ParallelCalculationExamProject
+namespace System.Threading.Tasks.Schedulers
 {
-    public class CustomTaskScheduler : TaskScheduler, IDisposable
+    /// <summary>Custom TaskScheduler that processes work items in batches, where 
+    /// each batch is processed by a ThreadPool thread, in parallel.</summary>
+    /// <remarks>
+    /// This is used as the default scheduler in several places in this solution, by, 
+    /// for example, calling it directly in <see cref="TaskExtensions.ForEachAsync"/>, 
+    /// or by accessing the relevant property of the static <see cref="TaskSchedulers"/> 
+    /// class.</remarks>
+    public class CustomTaskScheduler : TaskScheduler
     {
-        private BlockingCollection<Task> tasksCollection = new BlockingCollection<Task>();
-        private readonly Thread mainThread = null;
-        public CustomTaskScheduler()
+        [ThreadStatic]
+        private static bool currentThreadIsProcessingItems;
+
+        private int maxDegreeOfParallelism;
+
+        private volatile int runningOrQueuedCount;
+
+        private readonly LinkedList<Task> tasks = new LinkedList<Task>();
+
+        public CustomTaskScheduler(int maxDegreeOfParallelism)
         {
-            mainThread = new Thread(new ThreadStart(Execute));
-            if (!mainThread.IsAlive)
-            {
-                mainThread.Start();
-            }
+            if (maxDegreeOfParallelism < 1)
+                throw new ArgumentOutOfRangeException("maxDegreeOfParallelism");
+
+            this.maxDegreeOfParallelism = maxDegreeOfParallelism;
         }
-        private void Execute()
+
+        public CustomTaskScheduler() : this(Environment.ProcessorCount) { }
+
+        public override int MaximumConcurrencyLevel
         {
-            foreach (var task in tasksCollection.GetConsumingEnumerable())
-            {
-                TryExecuteTask(task);
-            }
+            get { return maxDegreeOfParallelism; }
         }
+
+        protected override bool TryDequeue(Task task)
+        {
+            lock (tasks) return tasks.Remove(task);
+        }
+
+        protected override bool TryExecuteTaskInline(Task task,
+            bool taskWasPreviouslyQueued)
+        {
+            if (!currentThreadIsProcessingItems) return false;
+
+            if (taskWasPreviouslyQueued) TryDequeue(task);
+
+            return base.TryExecuteTask(task);
+        }
+
         protected override IEnumerable<Task> GetScheduledTasks()
         {
-            return tasksCollection.ToArray();
+            var lockTaken = false;
+            try
+            {
+                Monitor.TryEnter(tasks, ref lockTaken);
+                if (lockTaken) return tasks.ToArray();
+                else throw new NotSupportedException();
+            }
+            finally { if (lockTaken) Monitor.Exit(tasks); }
         }
+
         protected override void QueueTask(Task task)
         {
-            if (task != null)
-                tasksCollection.Add(task);
+            lock (tasks) tasks.AddLast(task);
+
+            if (runningOrQueuedCount < maxDegreeOfParallelism)
+            {
+                runningOrQueuedCount++;
+                RunTasks();
+            }
         }
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+
+        /// <summary>Runs the work on the ThreadPool.</summary>
+        /// <remarks>
+        /// This TaskScheduler is similar to the <see cref="LimitedConcurrencyLevelTaskScheduler"/> 
+        /// sample implementation, until it reaches this method. At this point, rather than pulling 
+        /// one Task at a time from the list, up to maxDegreeOfParallelism Tasks are pulled, and run 
+        /// on a single ThreadPool thread in parallel.</remarks>
+        private void RunTasks()
         {
-            return false;
-        }
-        private void Dispose(bool disposing)
-        {
-            if (!disposing) return;
-            tasksCollection.CompleteAdding();
-            tasksCollection.Dispose();
-        }
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            ThreadPool.UnsafeQueueUserWorkItem(_ =>
+            {
+                List<Task> taskList = new List<Task>();
+
+                currentThreadIsProcessingItems = true;
+                try
+                {
+                    while (true)
+                    {
+                        lock (tasks)
+                        {
+                            if (tasks.Count == 0)
+                            {
+                                runningOrQueuedCount--;
+                                break;
+                            }
+
+                            var t = tasks.First.Value;
+                            taskList.Add(t);
+                            tasks.RemoveFirst();
+                        }
+                    }
+
+                    if (taskList.Count == 1)
+                    {
+                        base.TryExecuteTask(taskList[0]);
+                    }
+                    else if (taskList.Count > 0)
+                    {
+                        var batches = taskList.GroupBy(
+                            task => taskList.IndexOf(task) / maxDegreeOfParallelism);
+
+                        foreach (var batch in batches)
+                        {
+                            batch.AsParallel().ForAll(task =>
+                                base.TryExecuteTask(task));
+                        }
+                    }
+                }
+                finally { currentThreadIsProcessingItems = false; }
+
+            }, null);
         }
     }
 }

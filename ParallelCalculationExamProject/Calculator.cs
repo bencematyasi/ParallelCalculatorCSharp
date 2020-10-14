@@ -1,4 +1,7 @@
-﻿namespace ParallelCalculationExamProject
+﻿using System;
+using System.Threading;
+
+namespace ParallelCalculationExamProject
 {
     public class Calculator
     {
