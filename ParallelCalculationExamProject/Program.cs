@@ -36,7 +36,7 @@ namespace ParallelCalculationExamProject
 
         public static  void ParallelRun(Calculator calculator, Stopwatch sw)
         {
-            CustomTaskScheduler taskScheduler = new CustomTaskScheduler(Environment.ProcessorCount);
+            LimitedConcurrencyLevelTaskScheduler taskScheduler = new LimitedConcurrencyLevelTaskScheduler(Environment.ProcessorCount);
             sw.Reset();
             sw.Start();
             CancellationTokenSource cts = new CancellationTokenSource();
