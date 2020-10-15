@@ -34,24 +34,26 @@ namespace ParallelCalculationExamProject
             Console.WriteLine("Result: " + result + " calculated under {0:F5} sec.", (sw.ElapsedMilliseconds / 1000f));
         }
 
-        public static void ParallelRun(Calculator calculator, Stopwatch sw)
+        public static  void ParallelRun(Calculator calculator, Stopwatch sw)
         {
-            //CustomTaskScheduler taskScheduler = new CustomTaskScheduler(Environment.ProcessorCount);
+            CustomTaskScheduler taskScheduler = new CustomTaskScheduler(Environment.ProcessorCount);
             sw.Reset();
             sw.Start();
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(5000);
             long taskResult = 0;
-            List<Task<long>> taskList = new List<Task<long>>();
 
+            List<Task<long>> taskList = new List<Task<long>>();
             for (int i = 1; i < Environment.ProcessorCount + 1; i++)
             {
                 var fraction = MaxNumber / (Environment.ProcessorCount);
                 var first = ((fraction * i) - fraction) + 1;
                 var last = fraction * i;
 
-                //Creating as many Tasks as thread is counted in the machine, and setting each task a CancellationToken, that will cancel the task after 5 seconds of runtime 
-                Task<long> task = new Task<long>(() => calculator.calculateNumberOfDivisible(first, last, Divisor), cts.Token);
+                /*Creating as many Tasks as thread is counted in the machine,
+                and setting each task a CancellationToken, that will cancel the task after 5 seconds of runtime*/
+                Task<long> task = new Task<long>(() => 
+                    calculator.calculateNumberOfDivisible(first, last, Divisor), cts.Token);
                 //Add the created task to taskList
                 taskList.Add(task);
             }
@@ -60,7 +62,7 @@ namespace ParallelCalculationExamProject
             The order of execution does not matter*/
             Parallel.ForEach(taskList.ToArray(), task =>
             {
-                task.Start();
+                task.Start(taskScheduler);
             });
 
             //Wait all the tasks to be completed
